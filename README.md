@@ -20,7 +20,8 @@ The analysis covers **62,643 hotels** across **10 major cities**:
 - **Numbeo**: City-level crime statistics
 
 ---
-
+## Web interface link
+https://drive.google.com/file/d/1y6IKTqMy8AR-8AHGH27r8CV67UQpp1cd/view?usp=sharing
 ## Notebook Execution Order
 
 Run the notebooks in this exact sequence:
