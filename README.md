@@ -8,6 +8,17 @@ This project analyzes the gap between hotel expectations (what hotels claim/prom
 
 ---
 
+## Important Setup Note
+
+**Before running the notebooks**, you must configure environment variables in the first cell:
+
+- **Booking.ipynb**: Set `env_booking` in the first cell to your Databricks environment path
+- **scraped_data.ipynb**: Set `env_scraped_data` in the first cell to your workspace path where the CSV files are located
+
+These environment variables are critical for the notebooks to locate and access the required data files.
+
+---
+
 ## Dataset
 
 The analysis covers **62,643 hotels** across **10 major cities**:
