@@ -1,57 +1,116 @@
-# Hotel Reality Gap Analysis - Data Science Project
+<div align="center">
 
-## Project Overview
+# 🏨 Check-in To Reality
+### Hotel Reality Gap Analysis - Data Science Project
+
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![PySpark](https://img.shields.io/badge/PySpark-3.x-orange.svg)](https://spark.apache.org/)
+[![Databricks](https://img.shields.io/badge/Platform-Databricks-red.svg)](https://databricks.com/)
+[![License](https://img.shields.io/badge/License-Academic-green.svg)]()
+
+**Course**: Data Collection & Management Lab (094290) | **Institution**: Technion - Israel Institute of Technology
+
+[🎥 Demo Video](https://drive.google.com/file/d/1y6IKTqMy8AR-8AHGH27r8CV67UQpp1cd/view?usp=sharing) | [📊 GitHub Repository](https://github.com/Dekel-E/DSLab_project) | [▶️ Setup Tutorial](https://drive.google.com/file/d/1WvjKvSmrzrPztH8mYc3_PYvDywPvBEh9/view?usp=sharing)
+
+</div>
+
+---
+
+## 📋 Table of Contents
+
+- [Project Overview](#project-overview)
+- [Quick Start](#quick-start)
+- [Important Setup Note](#important-setup-note)
+- [Dataset](#dataset)
+- [Notebook Documentation](#notebook-documentation)
+  - [1. Booking.ipynb](#1-bookingipynb)
+  - [2. scraped_data.ipynb](#2-scraped_dataipynb)
+  - [3. spatial_joins_NLP.ipynb](#3-spatial_joins_nlpipynb)
+  - [4. randomforest.ipynb](#4-randomforestipynb)
+- [Key Metrics & Results](#key-metrics--results)
+- [Limitations and Reflections](#limitations-and-reflections)
+- [Conclusion](#conclusion)
+
+---
+
+## 🎯 Project Overview
 
 This project analyzes the gap between hotel expectations (what hotels claim/promise) and reality (what guests actually experience). Using data from Booking.com, OpenStreetMap, Google Maps, and crime statistics, we build a machine learning model to predict actual hotel quality and identify "overrated" properties.
 
-**Key Innovation**: By combining spatial analysis (nearby POIs, noise sources, transit) with NLP sentiment analysis of guest reviews, we detect hotels that may disappoint guests despite high ratings.
+> **💡 Key Innovation**: By combining spatial analysis (nearby POIs, noise sources, transit) with NLP sentiment analysis of guest reviews, we detect hotels that may disappoint guests despite high ratings.
 
 ---
-## Notebook Execution Order and how to run 
-Here is a short video on how to run : https://drive.google.com/file/d/1WvjKvSmrzrPztH8mYc3_PYvDywPvBEh9/view?usp=sharing
-Download and copy the notebooks to data bricks and run them in this order exactly
+
+## 🚀 Quick Start
+
+**📹 [Watch the Setup Tutorial](https://drive.google.com/file/d/1WvjKvSmrzrPztH8mYc3_PYvDywPvBEh9/view?usp=sharing)** for step-by-step instructions.
+
+### Execution Order
+
+Download and copy the notebooks to Databricks, then run them **in this exact order**:
+
+| Step | Notebook | Description | Runtime |
+|------|----------|-------------|---------|
+| 1️⃣ | `Booking.ipynb` | Data loading & cleaning | ~5 min |
+| 2️⃣ | `scraped_data.ipynb` | POI & crime data processing | ~5 min |
+| 3️⃣ | `spatial_joins_NLP.ipynb` | Spatial joins & NLP analysis | ~15-20 min |
+| 4️⃣ | `randomforest.ipynb` | ML model & gap scores | ~10-15 min |
+
+⏱️ **Total Runtime**: ~30-40 minutes
+
+---
+
+## ⚙️ Important Setup Note
+
+> **⚠️ BEFORE RUNNING**: You must configure environment variables in the first cell of relevant notebooks:
+
+| Notebook | Variable | Purpose |
+|----------|----------|---------|
+| **Booking.ipynb** | `env_booking` | Databricks environment path for Booking.com data |
+| **scraped_data.ipynb** | `env_scraped_data` | Workspace path where CSV files are located |
+
+💡 These environment variables are critical for the notebooks to locate and access the required data files.
+
+---
+
+## 📊 Dataset
+
+<div align="center">
+
+### 🌍 Coverage: **62,643 Hotels** across **10 Major Cities**
+
+</div>
 
 ```
-1. Booking.ipynb
-2. scraped_data.ipynb
-3. spatial_joins_NLP.ipynb
-4. randomforest.ipynb
+🇳🇱 Amsterdam  |  🇹🇭 Bangkok  |  🇦🇪 Dubai  |  🇮🇱 Eilat  |  🇮🇱 Haifa
+🇬🇧 London     |  🇺🇸 New York |  🇮🇹 Rome   |  🇮🇱 Tel Aviv  |  🇯🇵 Tokyo
 ```
 
----
-## Important Setup Note
+### Data Sources
 
-**Before running the notebooks**, you must configure environment variables in the first cell:
+| Source | Records | Description |
+|--------|---------|-------------|
+| **🏨 Booking.com** | 62,643 | Hotel listings, reviews, amenities, scores (primary dataset) |
+| **🗺️ OpenStreetMap** | 162,987 | POI records (restaurants, nightlife, transport, parks) |
+| **📍 Google Maps** | 13,660 | POI with ratings & reviews (7 cities, custom scraper) |
+| **🚨 Numbeo** | 150 | City-level crime statistics (15 metrics × 10 cities) |
+| **✈️ TripAdvisor** | N/A | Collected but not used (scalability constraints) |
 
-- **Booking.ipynb**: Set `env_booking` in the first cell to your Databricks environment path
-- **scraped_data.ipynb**: Set `env_scraped_data` in the first cell to your workspace path where the CSV files are located
+<div align="center">
 
-These environment variables are critical for the notebooks to locate and access the required data files.
+**📈 Total External Enrichment**: ~**190,000** new data points
 
----
+**🌐 [Web Interface Demo](https://drive.google.com/file/d/1y6IKTqMy8AR-8AHGH27r8CV67UQpp1cd/view?usp=sharing)**
 
-## Dataset
-
-The analysis covers **62,643 hotels** across **10 major cities**:
-- Amsterdam, Bangkok, Dubai, Eilat, Haifa, London, New York, Rome, Tel Aviv, Tokyo
-
-**Data Sources**:
-- **Booking.com**: Hotel listings, reviews, amenities, scores (primary dataset)
-- **OpenStreetMap (OSM)**: 162,987 POI records (restaurants, nightlife, transport, parks)
-- **Google Maps**: 13,660 POI records with ratings and reviews (7 cities, custom multi-threaded scraper with proxy rotation)
-- **Numbeo**: City-level crime statistics (150 records across 10 cities)
-- **TripAdvisor**: Collected but not used due to scalability constraints (kept for potential future enhancement)
-
-**Total External Enrichment**: ~190,000 new data points
+</div>
 
 ---
-## Web interface link
-https://drive.google.com/file/d/1y6IKTqMy8AR-8AHGH27r8CV67UQpp1cd/view?usp=sharing
 
+## 📚 Notebook Documentation
 
-## 1. Booking.ipynb
+## 1️⃣ Booking.ipynb
 
-### Purpose
+### 🎯 Purpose
 Loads, cleans, and processes Booking.com hotel data to extract structured features.
 
 ### What It Does
@@ -111,9 +170,9 @@ Loads, cleans, and processes Booking.com hotel data to extract structured featur
 
 ---
 
-## 2. scraped_data.ipynb
+## 2️⃣ scraped_data.ipynb
 
-### Purpose
+### 🎯 Purpose
 Loads and processes supplementary datasets (OSM POIs, Google Maps POIs, Crime data) to enrich hotel analysis with spatial and safety context.
 
 ### What It Does
@@ -193,9 +252,9 @@ Loads and processes supplementary datasets (OSM POIs, Google Maps POIs, Crime da
 
 ---
 
-## 3. spatial_joins_NLP.ipynb
+## 3️⃣ spatial_joins_NLP.ipynb
 
-### Purpose
+### 🎯 Purpose
 The core analytics notebook that combines spatial analysis and NLP to detect gaps between hotel promises and reality.
 
 ### What It Does
@@ -314,9 +373,9 @@ A key innovation is the engineering of **"Gap Signals"** - features quantifying 
 
 ---
 
-## 4. randomforest.ipynb
+## 4️⃣ randomforest.ipynb
 
-### Purpose
+### 🎯 Purpose
 Builds a machine learning model to predict "reality scores" and calculate the gap between expectations and actual guest experience.
 
 ### What It Does
@@ -459,217 +518,342 @@ We experimented with multiple ensemble methods to predict actual hotel quality:
 
 ---
 
-## Prerequisites & Setup
+## 🔧 Prerequisites & Setup
 
-### Environment
-- **Platform**: Databricks (Azure or AWS)
-- **Cluster**: Standard cluster with 8+ GB RAM
-- **Runtime**: Databricks Runtime 13.x+ (includes PySpark, Pandas, Matplotlib)
+### 💻 Environment Requirements
 
-### Required Libraries
-```python
-# Pre-installed on Databricks
-- pyspark
-- pandas
-- matplotlib
-- seaborn
-- numpy
+| Component | Specification |
+|-----------|--------------|
+| **Platform** | Databricks (Azure or AWS) |
+| **Cluster** | Standard cluster with 8+ GB RAM |
+| **Runtime** | Databricks Runtime 13.x+ |
+| **Included** | PySpark, Pandas, Matplotlib, Seaborn, NumPy |
 
-# Additional (install via %pip)
-- folium (for maps in notebook 2)
+### 📦 Required Libraries
+
+<table>
+<tr>
+<td width="50%">
+
+**Pre-installed on Databricks** ✅
+```
+✓ pyspark
+✓ pandas
+✓ matplotlib
+✓ seaborn
+✓ numpy
 ```
 
-### Installation
-```bash
+</td>
+<td width="50%">
+
+**Additional Installation** 📥
+```python
 # In Databricks notebook:
 %pip install folium
 ```
+<small>(Required for maps in notebook 2)</small>
 
-### Data Requirements
-All the data is being read from our BLOB
+</td>
+</tr>
+</table>
+
+### 📂 Data Requirements
+> 💾 All the data is being read from our Azure Blob Storage
 ---
 
-## Output Files
+## 📁 Output Files
 
-### Silver Layer (Cleaned Data)
-- `dbfs:/FileStore/project/silver/booking_parsed` - Cleaned hotel data
-- `dbfs:/FileStore/project/silver/osm_clean` - OSM POIs
-- `dbfs:/FileStore/project/silver/gmaps_clean` - Google Maps POIs
-- `dbfs:/FileStore/project/silver/crime_numbeo` - Crime statistics
+### 🥈 Silver Layer (Cleaned Data)
 
-### Gold Layer (Analytics-Ready)
-- `dbfs:/FileStore/project/gold/hotel_with_sentiment` - Hotels with all features
-- `dbfs:/FileStore/project/gold/hotel_webapp` - Final dataset for web application
+```
+dbfs:/FileStore/project/silver/
+├── 📄 booking_parsed      → Cleaned hotel data (62,643 hotels)
+├── 📄 osm_clean           → OSM POIs (162,987 records)
+├── 📄 gmaps_clean         → Google Maps POIs (13,660 records)
+└── 📄 crime_numbeo        → Crime statistics (150 records)
+```
 
-### CSV Export
-- `/FileStore/tables/hotel_webapp.csv` - Downloadable CSV for web app
+### 🥇 Gold Layer (Analytics-Ready)
 
----
+```
+dbfs:/FileStore/project/gold/
+├── 📊 hotel_with_sentiment → Hotels with all features (~150 columns)
+└── 🌐 hotel_webapp         → Final dataset for web app (22,988 hotels)
+```
 
-## Key Metrics & Results
+### 💾 CSV Export
 
-### Dataset Statistics
-- **Total Hotels**: 62,643
-- **Hotels with Complete Data**: 22,988 (used in model)
-- **Total POIs**: 176,645 (OSM + Google Maps)
-- **Cities Covered**: 10
-- **Features Engineered**: 150+
-
-### Model Performance (GBT)
-- **RMSE**: 0.839 (predicts within ±0.84 points on 10-point scale)
-- **R² Score**: 0.873 (explains 87.3% of variance)
-- **MAE**: 0.484 (average error of 0.48 points)
-
-**Comparison to Baseline (Random Forest)**:
-- RF RMSE: 1.179 vs GBT RMSE: 0.839 (29% improvement)
-- RF R²: 0.723 vs GBT R²: 0.873 (15% improvement)
-
-### Gap Analysis Results
-- **High Risk Hotels**: ~15% (likely to disappoint)
-- **Hidden Gems**: ~8% (exceed expectations)
-- **As Expected**: ~50% (reliable)
-- **Better Than Expected**: ~27%
-
-### Feature Importance
-1. **Review Volume** (35.7%) - More reviews = more reliable signal
-2. **Spatial Context** (30.6%) - Location quality matters most
-3. **Hotel Claims** (17.4%) - What hotel promises
-4. **Guest Sentiment** (8.6%) - Actual experience
-5. **City Safety** (7.7%) - Crime impacts satisfaction
+```
+/FileStore/tables/
+└── 📥 hotel_webapp.csv → Downloadable CSV for web application
+```
 
 ---
 
-## Limitations and Reflections
+## 📈 Key Metrics & Results
+
+<div align="center">
+
+### 📊 Dataset Statistics
+
+| Metric | Value |
+|--------|-------|
+| **Total Hotels** | 62,643 |
+| **Hotels with Complete Data** | 22,988 (used in model) |
+| **Total POIs** | 176,645 (OSM + Google Maps) |
+| **Cities Covered** | 10 |
+| **Features Engineered** | 150+ |
+
+</div>
+
+### 🎯 Model Performance (GBT)
+
+<table>
+<tr>
+<td align="center">
+<b>RMSE</b><br/>
+<code>0.839</code><br/>
+<small>±0.84 points on 10-point scale</small>
+</td>
+<td align="center">
+<b>R² Score</b><br/>
+<code>0.873</code><br/>
+<small>Explains 87.3% of variance</small>
+</td>
+<td align="center">
+<b>MAE</b><br/>
+<code>0.484</code><br/>
+<small>Average error 0.48 points</small>
+</td>
+</tr>
+</table>
+
+**🏆 Comparison to Baseline (Random Forest)**:
+- RMSE: `1.179` → `0.839` (**29% improvement** ✅)
+- R²: `0.723` → `0.873` (**15% improvement** ✅)
+
+### 🔍 Gap Analysis Results
+
+```
+High Risk Hotels    ████████░░░░░░░░░░  15%  (likely to disappoint)
+Hidden Gems         ████░░░░░░░░░░░░░░   8%  (exceed expectations)
+As Expected         ██████████░░░░░░░░  50%  (reliable)
+Better Than Expected ██████████████░░░░  27%  (pleasant surprise)
+```
+
+### 🎖️ Feature Importance
+
+| Rank | Feature Category | Importance | Key Insight |
+|------|-----------------|------------|-------------|
+| 🥇 | **Review Volume** | 35.7% | More reviews = more reliable signal |
+| 🥈 | **Spatial Context** | 30.6% | Location quality matters most |
+| 🥉 | **Hotel Claims** | 17.4% | What hotel promises |
+| 4️⃣ | **Guest Sentiment** | 8.6% | Actual experience (NLP) |
+| 5️⃣ | **City Safety** | 7.7% | Crime impacts satisfaction |
+
+---
+
+## ⚠️ Limitations and Reflections
 
 While the model demonstrates high predictive power (R² = 0.873), several limitations constrained the approach and offer avenues for future work:
 
-### Data Collection Scalability & Coverage
+### 🌐 Data Collection Scalability & Coverage
 
-**Challenge**: The most significant challenge was integrating proprietary external data. Due to strict anti-bot measures and aggressive rate-limiting:
+> **⚡ Challenge**: The most significant challenge was integrating proprietary external data. Due to strict anti-bot measures and aggressive rate-limiting:
 - Google Maps enrichment covers only **7 of 10 target cities**
 - TripAdvisor scraping was abandoned due to scalability issues
 
 **Impact**: Model performance might vary across different geographies. A fully deployed production system would require official enterprise APIs rather than web scraping.
 
-**Solution Used**: Developed custom multi-threaded scraper with proxy rotation (200k proxies filtered to ~300 high-quality), but still faced constraints.
+💡 **Solution Used**: Developed custom multi-threaded scraper with proxy rotation (200k proxies filtered to ~300 high-quality), but still faced constraints.
 
-### Geospatial Approximations
+### 📍 Geospatial Approximations
 
-**Challenge**: Spatial analysis relies on **Haversine distance** (Euclidean "as-the-crow-flies" distance) to calculate POI proximity.
+> **⚡ Challenge**: Spatial analysis relies on **Haversine distance** (Euclidean "as-the-crow-flies" distance) to calculate POI proximity.
 
-**Limitation**: In dense urban environments (Tokyo, New York), this doesn't reflect true walking distance due to:
+**⚠️ Limitation**: In dense urban environments (Tokyo, New York), this doesn't reflect true walking distance due to:
 - Physical barriers (highways, rivers)
 - Lack of pedestrian crossings
 - Complex urban layouts
 
-**Impact**: "Convenience" features (e.g., `dist_to_subway`) are approximations that might over-optimistically assess a hotel's location.
+📊 **Impact**: "Convenience" features (e.g., `dist_to_subway`) are approximations that might over-optimistically assess a hotel's location.
 
-### Temporal Dynamics & Seasonality
+### ⏰ Temporal Dynamics & Seasonality
 
-**Challenge**: Dataset represents a static snapshot in time.
+> **⚡ Challenge**: Dataset represents a static snapshot in time.
 
-**Missing Factors**:
+**🔍 Missing Factors**:
 - Seasonality effects (summer festivals, tourist seasons)
 - Temporary construction noise
 - Evolving neighborhoods
 - Review timestamps not accounted for
 
-**Impact**: Model doesn't capture transient trends affecting guest satisfaction. A "quiet" neighborhood might be noisy during peak seasons.
+📉 **Impact**: Model doesn't capture transient trends affecting guest satisfaction. A "quiet" neighborhood might be noisy during peak seasons.
 
-### Key Learnings
+### 💡 Key Learnings
 
-1. **Data Engineering Outweighs Modeling**: Initially underestimated computational cost of spatial joins. The "Cartesian Explosion" problem forced innovation with Geohashing and neighbor-cell strategies.
-
-2. **External Enrichment is Powerful but Noisy**: Aligning vague hotel addresses with precise OSM coordinates required robust cleaning logic.
-
-3. **Simple Signals Win**: Despite complex spatial and NLP features, `number_of_reviews` (social proof) remains the strongest predictor - highlighting the power of "wisdom of the crowd" in hospitality.
-
-4. **Trade-offs in Data Collection**: Real-world data science involves balancing ideal data coverage with practical constraints (rate limits, scraping difficulties, API costs).
+| # | Learning | Insight |
+|---|----------|---------|
+| 1️⃣ | **Data Engineering > Modeling** | Initially underestimated computational cost of spatial joins. The "Cartesian Explosion" forced innovation with Geohashing strategies. |
+| 2️⃣ | **External Enrichment is Powerful but Noisy** | Aligning vague hotel addresses with precise OSM coordinates required robust cleaning logic. |
+| 3️⃣ | **Simple Signals Win** | Despite complex spatial/NLP features, `number_of_reviews` (social proof) remains strongest predictor. |
+| 4️⃣ | **Real-World Trade-offs** | Data science involves balancing ideal coverage with practical constraints (rate limits, scraping, API costs). |
 
 ---
 
-## Troubleshooting
+## 🛠️ Troubleshooting
 
-### Common Issues
+### 🔍 Common Issues & Solutions
 
-**Issue 1: Azure Blob Storage Access Denied**
+<details>
+<summary><b>❌ Issue 1: Azure Blob Storage Access Denied</b></summary>
+
+**Solution**: Update SAS token in Booking.ipynb
 ```python
-# Solution: Update SAS token in Booking.ipynb
 sas_token = "your_new_token_here"
 ```
+</details>
 
-**Issue 2: File Not Found Errors**
+<details>
+<summary><b>❌ Issue 2: File Not Found Errors</b></summary>
+
+**Solution**: Verify file paths in scraped_data.ipynb
 ```python
-# Solution: Verify file paths in scraped_data.ipynb
 base_path = "file:/Workspace/Users/[your-email]/"
 ```
+</details>
 
-**Issue 3: Memory Errors During Spatial Joins**
+<details>
+<summary><b>❌ Issue 3: Memory Errors During Spatial Joins</b></summary>
+
+**Solution**: Increase cluster size or adjust partitions
 ```python
-# Solution: Increase cluster size or reduce data
 # In spatial_joins_NLP.ipynb:
 spark.conf.set("spark.sql.shuffle.partitions", 200)
 ```
+💡 Consider using a cluster with more memory (16+ GB RAM)
+</details>
 
-**Issue 4: NLP Processing Timeout**
+<details>
+<summary><b>❌ Issue 4: NLP Processing Timeout</b></summary>
+
+**Solution**: Process cities in batches
 ```python
-# Solution: Process cities in batches
 cities_batch_1 = ["Amsterdam", "Bangkok", "Dubai"]
 cities_batch_2 = ["Eilat", "Haifa", "London"]
 # ... process separately
 ```
+⏱️ Expected processing time: ~20 minutes per batch
+</details>
 
 ---
 
-
-## Project Structure
+## 📂 Project Structure
 
 ```
-DSLab_project/
-├── README.md (this file)
-├── Booking.ipynb (Step 1: Data loading & cleaning)
-├── scraped_data.ipynb (Step 2: POI & crime data)
-├── spatial_joins_NLP.ipynb (Step 3: Spatial joins & NLP)
-├── randomforest.ipynb (Step 4: ML model & gap scores)
+📦 DSLab_project/
+│
+├── 📄 README.md                    ← You are here!
+│
+├── 📓 Booking.ipynb                ← Step 1: Data loading & cleaning (5 min)
+├── 📓 scraped_data.ipynb           ← Step 2: POI & crime data (5 min)
+├── 📓 spatial_joins_NLP.ipynb      ← Step 3: Spatial joins & NLP (15-20 min)
+└── 📓 randomforest.ipynb           ← Step 4: ML model & gap scores (10-15 min)
+```
 
 ---
 
-## Contact & Questions
+## 📞 Contact & Support
+
+### ❓ Need Help?
 
 For questions or issues with the notebooks, please check:
-1. Cell outputs for error messages
-2. Data file paths and permissions
-3. Cluster configuration and resources
 
-**Expected Total Runtime**: 20-30 minutes for all notebooks
+1. ✅ **Cell outputs** for error messages
+2. ✅ **Data file paths** and permissions
+3. ✅ **Cluster configuration** and resources
+4. ✅ **[Setup Tutorial Video](https://drive.google.com/file/d/1WvjKvSmrzrPztH8mYc3_PYvDywPvBEh9/view?usp=sharing)**
+
+### ⏱️ Expected Runtime
+
+> **Total**: 30-40 minutes for all notebooks
+
+---
+
+<div align="center">
+
+## 🎓 Conclusion
+
+### **"Check-in To Reality"**
+*Bridging the Gap Between Hotel Promises and Guest Experiences*
+
+</div>
+
+This project successfully developed a comprehensive data-driven framework that quantifies the gap between hotel marketing promises and actual guest experiences.
+
+### 🏆 Key Achievements
+
+| Achievement | Details |
+|-------------|---------|
+| **📊 Large-Scale Integration** | Integrated **190,000+ external data points** from OSM, Google Maps, and Numbeo with Booking.com dataset |
+| **⚙️ Innovative Engineering** | Overcame Cartesian explosion using Geohashing with neighbor-cell expansion for efficient spatial joins |
+| **🤖 Hybrid Analytics** | Combined rule-based NLP with BERT sentiment analysis for nuanced review insights |
+| **🎯 Strong Performance** | Achieved **R² = 0.873** with GBT, validating environmental factors' impact on satisfaction |
+| **💡 Actionable Insights** | Revealed "wisdom of the crowd" as strongest quality predictor despite complex features |
+
+### 🌟 Impact
+
+<table>
+<tr>
+<td width="50%" align="center">
+<h3>👥 For Travelers</h3>
+Empowers informed decisions based on <b>objective reality</b> rather than just marketing claims
+</td>
+<td width="50%" align="center">
+<h3>🏨 For Hosts</h3>
+Provides <b>actionable feedback</b> to bridge the gap between expectation and delivery
+</td>
+</tr>
+</table>
+
+<div align="center">
 
 ---
 
-## Conclusion
+*The analysis demonstrates that data science can transform subjective hospitality experiences into quantifiable, predictable outcomes, ultimately improving trust and decision-making in the accommodation marketplace.*
 
-This project successfully developed **"Check-in To Reality"**, a comprehensive data-driven framework that quantifies the gap between hotel marketing promises and actual guest experiences.
+**📚 Course**: Data Collection & Management Lab (094290)
+**🏛️ Institution**: Technion - Israel Institute of Technology
 
-### Key Achievements
-
-1. **Large-Scale Data Integration**: Successfully integrated over **190,000 external data points** from OpenStreetMap, Google Maps, and Numbeo with Booking.com's hotel dataset.
-
-2. **Innovative Engineering Solutions**: Overcame significant computational challenges (Cartesian explosion problem) using Geohashing techniques with neighbor-cell expansion for efficient spatial joins.
-
-3. **Hybrid Analytics Approach**: Combined rule-based NLP with BERT-based sentiment analysis to extract nuanced insights from guest reviews.
-
-4. **Strong Predictive Performance**: Achieved **R² = 0.873** with Gradient Boosted Trees, validating that external environmental factors (noise levels, transit accessibility) significantly influence guest satisfaction.
-
-5. **Actionable Insights**: Revealed that while physical amenities and location are critical, the "wisdom of the crowd" (review volume and text) remains the strongest indicator of quality.
-
-### Impact
-
-This framework offers **dual benefits**:
-
-- **For Travelers**: Empowers informed decisions based on objective reality rather than just marketing claims
-- **For Hosts**: Provides actionable, granular feedback to bridge the gap between expectation and delivery
-
-The analysis demonstrates that data science can transform subjective hospitality experiences into quantifiable, predictable outcomes, ultimately improving trust and decision-making in the accommodation marketplace.
+</div>
 
 ---
+
+<div align="center">
+
+## 👥 Project Team
+
+| Name | Student ID |
+|------|-----------|
+| **Amit Gertner** | 209399336 |
+| **Dekel Elmaliah** | 205852486 |
+| **Shoval Zvieli** | 31494779 |
+
+---
+
+### 🔗 Quick Links
+
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/Dekel-E/DSLab_project)
+[![Demo](https://img.shields.io/badge/Demo-Video-FF0000?style=for-the-badge&logo=youtube)](https://drive.google.com/file/d/1y6IKTqMy8AR-8AHGH27r8CV67UQpp1cd/view)
+[![Tutorial](https://img.shields.io/badge/Tutorial-Setup-4285F4?style=for-the-badge&logo=google-drive)](https://drive.google.com/file/d/1WvjKvSmrzrPztH8mYc3_PYvDywPvBEh9/view)
+
+---
+
+**Made with ❤️ for Data Science**
+
+*Technion - Israel Institute of Technology • 2024*
+
+</div>
 
 
