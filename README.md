@@ -7,7 +7,17 @@ This project analyzes the gap between hotel expectations (what hotels claim/prom
 **Key Innovation**: By combining spatial analysis (nearby POIs, noise sources, transit) with NLP sentiment analysis of guest reviews, we detect hotels that may disappoint guests despite high ratings.
 
 ---
+## Notebook Execution Order and how to run 
+Download and copy the notebooks to data bricks and run them in this order exactly
 
+```
+1. Booking.ipynb
+2. scraped_data.ipynb
+3. spatial_joins_NLP.ipynb
+4. randomforest.ipynb
+```
+
+---
 ## Important Setup Note
 
 **Before running the notebooks**, you must configure environment variables in the first cell:
@@ -36,18 +46,7 @@ The analysis covers **62,643 hotels** across **10 major cities**:
 ---
 ## Web interface link
 https://drive.google.com/file/d/1y6IKTqMy8AR-8AHGH27r8CV67UQpp1cd/view?usp=sharing
-## Notebook Execution Order
 
-Run the notebooks in this exact sequence:
-
-```
-1. Booking.ipynb
-2. scraped_data.ipynb
-3. spatial_joins_NLP.ipynb
-4. randomforest.ipynb
-```
-
----
 
 ## 1. Booking.ipynb
 
