@@ -25,10 +25,13 @@ The analysis covers **62,643 hotels** across **10 major cities**:
 - Amsterdam, Bangkok, Dubai, Eilat, Haifa, London, New York, Rome, Tel Aviv, Tokyo
 
 **Data Sources**:
-- **Booking.com**: Hotel listings, reviews, amenities, scores
-- **OpenStreetMap (OSM)**: Points of interest (restaurants, nightlife, transport, parks)
-- **Google Maps**: Additional POI data with ratings and reviews
-- **Numbeo**: City-level crime statistics
+- **Booking.com**: Hotel listings, reviews, amenities, scores (primary dataset)
+- **OpenStreetMap (OSM)**: 162,987 POI records (restaurants, nightlife, transport, parks)
+- **Google Maps**: 13,660 POI records with ratings and reviews (7 cities, custom multi-threaded scraper with proxy rotation)
+- **Numbeo**: City-level crime statistics (150 records across 10 cities)
+- **TripAdvisor**: Collected but not used due to scalability constraints (kept for potential future enhancement)
+
+**Total External Enrichment**: ~190,000 new data points
 
 ---
 ## Web interface link
@@ -52,21 +55,32 @@ Run the notebooks in this exact sequence:
 Loads, cleans, and processes Booking.com hotel data to extract structured features.
 
 ### What It Does
-1. **Data Loading**
+1. **Data Loading & Standardization**
    - Reads hotel data from Azure Blob Storage (parquet format)
    - Filters to 10 target cities
-   - Standardizes city names (handles variations like "NYC" → "New York")
+   - **City Name Standardization**: Implements keyword mapping to unify inconsistent city names
+     - Example: "NYC", "Bronx", "Brooklyn" → unified as "New York"
+     - Ensures data integrity across geographic variations
 
-2. **Geographic Validation**
-   - Calculates distance from city center using Haversine formula
-   - Removes outliers (hotels too far from city center)
-   - Validates coordinates
+2. **Geographic Validation & Geofiltering**
+   - **Haversine Distance Filter**: Calculates distance of each listing from respective city center
+   - **Spatial Outlier Removal**: Removes listings beyond defined city buffer
+     - Filters erroneous entries (e.g., locations named "Rome" situated in USA)
+     - City-specific radius thresholds (larger cities = larger buffer)
+   - Validates coordinate accuracy
+   - Result: Clean dataset relevant only to 10 target cities
 
 3. **Feature Extraction**
-   - **Amenities**: Extracts flags for WiFi, parking, AC, pool, gym, etc. (18 amenity types)
-   - **House Rules**: Check-in/out times, pet policies, smoking rules, quiet hours
+   - **Amenities**: Parses `most_popular_facilities` field using predefined dictionary to transform amenity lists into Boolean vectors (e.g., has_wifi, has_pool) - 18 amenity types total
+   - **House Rules**: Applies Regex to unstructured house rules to extract:
+     - Structured numeric data (check-in/out times)
+     - Categorical policies (pets allowed, smoking rules, quiet hours)
    - **Property Surroundings**: Number and distance of nearby POIs
-   - **Claims Analysis**: Detects keywords in descriptions (claims_quiet, claims_central, claims_luxury, etc.)
+   - **Claims Extraction (Expectation Modeling)**: Core component quantifying "host's promise"
+     - Text mining module scans description, highlights, and title fields
+     - Detects "Claims Keywords" for location and atmosphere (e.g., "central", "quiet", "spacious", "luxury")
+     - Generates Claims Features (claims_luxury, claims_central, claims_quiet, etc.)
+     - Serves as baseline for "Expectation vs. Reality" analysis
    - **Reviews**: Aggregates review text, reviewer countries
 
 4. **Data Quality**
@@ -125,9 +139,16 @@ Loads and processes supplementary datasets (OSM POIs, Google Maps POIs, Crime da
 4. **Output**: `dbfs:/FileStore/project/silver/osm_clean`
 
 #### Part B: Google Maps Data
+
+**Collection Method** (custom multi-threaded scraper):
+- **Proxy Infrastructure**: Aggregated 200k proxies, filtered to ~300 high-quality functional proxies
+- **Execution**: 15 concurrent headed browser instances (Selenium/Playwright), each with distinct proxy
+- **Anti-Bot Evasion**: User-agent rotation, randomized delays, human-like scrolling patterns
+- **Challenge**: Key limitation of OSM is lack of qualitative textual data; Google Maps bridges this gap
+
 1. **Data Loading**
-   - Loads POI data from 6 cities (13,660 POIs)
-   - Richer data: ratings, reviews, categories
+   - Loads POI data from 7 cities (13,660 POIs)
+   - **Richer data**: ratings, reviews, categories (vs. OSM's basic location data)
 
 2. **Enhanced Features**
    - **Noise Scoring**: Analyzes review text for noise keywords (loud, party, music vs. quiet, calm)
@@ -180,9 +201,21 @@ The core analytics notebook that combines spatial analysis and NLP to detect gap
 ### What It Does
 
 #### Part A: Spatial Joins
+
+**Efficient Joining via Geohashing**
+
+A naive distance calculation between every hotel and POI would result in a prohibitive Cartesian product (~70,000 hotels × 180,000 POIs ≈ 12.6 billion comparisons). To solve this computational bottleneck, we implemented a **Geohash-based blocking strategy**:
+
 1. **Geospatial Indexing**
-   - Adds GeoHash to hotels and POIs for efficient spatial queries
-   - Creates spatial indices for fast distance calculations
+   - Assigns precision-based Geohash strings to hotels and POIs
+   - Partitions the world into manageable grid cells
+   - Reduces the problem from global search to local bucket search
+
+2. **Neighbor Explosion Technique**
+   - Replicates each hotel record to associate with its own Geohash cell
+   - Also associates with 8 surrounding neighbor cells
+   - Prevents missing POIs located just across grid cell borders
+   - This "neighbor explosion" ensures comprehensive coverage
 
 2. **OSM Spatial Join**
    - Counts POIs within various radii (300m, 500m, 1km)
@@ -208,10 +241,15 @@ The core analytics notebook that combines spatial analysis and NLP to detect gap
    - `high_rated_restaurants_500m`: Quality dining options
    - `tourist_trap_pois_500m`: Tourist trap density
 
-#### Part B: NLP Analysis
+#### Part B: NLP Analysis - Hybrid Dual-Layer Pipeline
+
+This notebook implements a **Hybrid NLP Pipeline** combining rule-based extraction with semantic sentiment analysis to capture both specific complaints and general sentiment nuances:
+
+**Layer 1: Rule-Based Extraction**
 1. **Review Text Processing**
    - Loads review text from all hotels
    - Cleans and normalizes text (lowercase, remove special chars)
+   - Applies complex Regex patterns to detect specific complaint categories
 
 2. **Keyword-Based Complaint Detection**
    - **Noise complaints**: "loud", "noisy", "party", "music"
@@ -229,13 +267,22 @@ The core analytics notebook that combines spatial analysis and NLP to detect gap
    - **Host praise**: "friendly", "helpful", "attentive"
    - **Value praise**: "great value", "affordable", "worth it"
 
-4. **Sentiment Analysis**
-   - Uses PySpark ML or TextBlob for sentiment scoring
+4. **Sentiment Analysis (Layer 2: Semantic Analysis)**
+   - Uses **Spark NLP's BERT-based pipeline** (Universal Sentence Encoder)
+   - Generates `bert_sentiment_score` for sophisticated emotional tone understanding
    - Calculates **sentiment polarity** (-1 to +1)
    - Calculates **sentiment intensity** (strength of emotion)
    - Creates **complaint ratio** (complaints / total sentiment words)
+   - Captures nuances missed by simple keyword counting
 
-5. **Gap Indicators Created**
+5. **Gap Signal Detection - Core Innovation**
+
+A key innovation is the engineering of **"Gap Signals"** - features quantifying contradictions between host promises and guest realities:
+
+   - **Noise Gap Example**: Flags discrepancies where hotel metadata claims "quiet" or "soundproof", yet NLP detects high frequency of noise-related complaints
+   - **bert_score_gap**: Difference between normalized review score (0-1) and BERT sentiment score - indicates when users give high ratings but write negative reviews (social pressure effect)
+
+**Gap Indicators Created**
    - `sentiment_gap`: Difference between review score and sentiment
    - `noise_gap_signal`: Claims quiet but has noise complaints
    - `cleanliness_gap_signal`: Claims clean but has cleanliness complaints
@@ -295,21 +342,37 @@ Builds a machine learning model to predict "reality scores" and calculate the ga
    - Stratified by city to ensure balanced representation
 
 #### Part B: Model Training
-1. **Random Forest Model**
+
+**Model Selection: Gradient Boosted Trees (GBT) vs Random Forest**
+
+We experimented with multiple ensemble methods to predict actual hotel quality:
+
+1. **Random Forest Model (Baseline)**
    - 100 trees, max depth 10
+   - **Approach**: Parallel bagging (trains trees independently)
    - **Performance**:
      - Test RMSE: 1.179
      - Test R²: 0.723
      - Test MAE: 0.792
 
-2. **Gradient Boosted Trees (GBT)**
+2. **Gradient Boosted Trees (GBT) - Selected Model**
    - 50 iterations, max depth 10
-   - **Performance** (Better!):
-     - Test RMSE: 0.814
-     - Test R²: 0.867
-     - Test MAE: 0.484
+   - **Approach**: Sequential boosting (each tree corrects errors from previous trees)
+   - **Why GBT?**: GBT's boosting mechanism proved more effective at capturing subtle, non-linear patterns in our data
+   - **Final Performance**:
+     - **Test RMSE: 0.839** (average error ~0.8 points on 10-point scale)
+     - **Test R²: 0.873** (explains 87.3% of variance in hotel scores)
+     - **Test MAE: 0.484** (average absolute error 0.48 points)
 
-3. **Selected Model**: GBT (better performance)
+   **Interpretation**: An R² of 0.873 indicates strong predictive power. The model's predictions deviate from actual ratings by less than 0.9 points on average - highly acceptable for this domain.
+
+3. **Model Architecture**
+   - High-dimensional feature space: ~150 features total
+   - Features assembled using Spark's VectorAssembler
+   - Three data layers integrated:
+     - **Expectation Features**: Quantified host claims
+     - **Spatial Reality**: OSM & Google Maps geospatial metrics
+     - **NLP Signals**: Sentiment scores and complaint/praise ratios
 
 #### Part C: Gap Score Calculation
 1. **Reality Prediction**
@@ -332,12 +395,34 @@ Builds a machine learning model to predict "reality scores" and calculate the ga
    - **Hidden Gem** (gap < -1.5): Much better than expected
 
 #### Part D: Feature Importance Analysis
-**Top 5 Drivers of Hotel Scores**:
-1. `number_of_reviews` (35.7%) - Social proof
-2. Spatial features (30.6%) - Location quality
-3. Expectation features (17.4%) - What hotel claims
-4. NLP features (8.6%) - Guest complaints/praise
-5. Crime features (7.7%) - City safety
+
+**Why GBT for Interpretability**: A primary reason for selecting GBT was its interpretability via feature importance scores, revealing clear patterns in guest satisfaction.
+
+**Top Drivers of Hotel Scores**:
+
+1. **`number_of_reviews` (~26% importance)** - The strongest single predictor
+   - Indicates "Wisdom of the Crowd" effect
+   - Established, frequently reviewed hotels maintain consistent scores
+   - Social proof is the dominant quality signal
+
+2. **Spatial Features (~30.6% combined)** - Location quality matters most
+   - `distance_from_center_km` (3.5%) - Convenience and accessibility
+   - `nearest_transport_m` (2.9%) - Transit proximity
+   - Confirms that location drives satisfaction
+
+3. **Expectation Features (~17.4% combined)** - What hotels claim
+   - `amenities_count` (3.2%) - Hotels with more services score higher
+   - Validates that variety of offerings matters
+
+4. **NLP Features (~8.6% combined)** - Actual guest experience
+   - `sentiment_score_adjusted` and `positive_word_count` in top 20
+   - Confirms NLP-derived signals align with numerical ratings
+   - Contributes meaningfully despite structural features dominating
+
+5. **Crime Features (~7.7% combined)** - City safety impacts satisfaction
+   - City-level safety metrics influence overall experience
+
+**Key Insight**: While complex spatial and NLP features add value, simple signals of "trust" and "social proof" (review volume) remain the dominant predictors in hospitality.
 
 #### Part E: Output for Web App
 1. **Creates Final Dataset** (`hotel_webapp`)
@@ -401,38 +486,7 @@ Builds a machine learning model to predict "reality scores" and calculate the ga
 ```
 
 ### Data Requirements
-Place the following files in your Databricks Workspace:
-```
-/Workspace/Users/[your-email]/
-├── booking_1_9.parquet (Booking.com data)
-├── amsterdam.csv (OSM)
-├── bangkok.csv (OSM)
-├── dubai.csv (OSM)
-├── eilat.csv (OSM)
-├── haifa.csv (OSM)
-├── london.csv (OSM)
-├── new_york_city.csv (OSM)
-├── rome.csv (OSM)
-├── tel_aviv.csv (OSM)
-├── tokyo.csv (OSM)
-├── amsterdam_final.csv (Google Maps)
-├── bangkok_final.csv (Google Maps)
-├── dubai_final.csv (Google Maps)
-├── eilat_final.csv (Google Maps)
-├── rome_final.csv (Google Maps)
-├── tokyo_final.csv (Google Maps)
-├── crime_amsterdam_numbeo.csv
-├── crime_bangkok_numbeo.csv
-├── crime_dubai_numbeo.csv
-├── crime_eilat_numbeo.csv
-├── crime_haifa_numbeo.csv
-├── crime_london_numbeo.csv
-├── crime_new_york_numbeo.csv
-├── crime_rome_numbeo.csv
-├── crime_tel_aviv_numbeo.csv
-└── crime_tokyo_numbeo.csv
-```
-
+All the data is being read from our BLOB
 ---
 
 ## Output Files
@@ -462,9 +516,13 @@ Place the following files in your Databricks Workspace:
 - **Features Engineered**: 150+
 
 ### Model Performance (GBT)
-- **RMSE**: 0.814 (predicts within ±0.8 points on 10-point scale)
-- **R² Score**: 0.867 (explains 86.7% of variance)
+- **RMSE**: 0.839 (predicts within ±0.84 points on 10-point scale)
+- **R² Score**: 0.873 (explains 87.3% of variance)
 - **MAE**: 0.484 (average error of 0.48 points)
+
+**Comparison to Baseline (Random Forest)**:
+- RF RMSE: 1.179 vs GBT RMSE: 0.839 (29% improvement)
+- RF R²: 0.723 vs GBT R²: 0.873 (15% improvement)
 
 ### Gap Analysis Results
 - **High Risk Hotels**: ~15% (likely to disappoint)
@@ -478,6 +536,55 @@ Place the following files in your Databricks Workspace:
 3. **Hotel Claims** (17.4%) - What hotel promises
 4. **Guest Sentiment** (8.6%) - Actual experience
 5. **City Safety** (7.7%) - Crime impacts satisfaction
+
+---
+
+## Limitations and Reflections
+
+While the model demonstrates high predictive power (R² = 0.873), several limitations constrained the approach and offer avenues for future work:
+
+### Data Collection Scalability & Coverage
+
+**Challenge**: The most significant challenge was integrating proprietary external data. Due to strict anti-bot measures and aggressive rate-limiting:
+- Google Maps enrichment covers only **7 of 10 target cities**
+- TripAdvisor scraping was abandoned due to scalability issues
+
+**Impact**: Model performance might vary across different geographies. A fully deployed production system would require official enterprise APIs rather than web scraping.
+
+**Solution Used**: Developed custom multi-threaded scraper with proxy rotation (200k proxies filtered to ~300 high-quality), but still faced constraints.
+
+### Geospatial Approximations
+
+**Challenge**: Spatial analysis relies on **Haversine distance** (Euclidean "as-the-crow-flies" distance) to calculate POI proximity.
+
+**Limitation**: In dense urban environments (Tokyo, New York), this doesn't reflect true walking distance due to:
+- Physical barriers (highways, rivers)
+- Lack of pedestrian crossings
+- Complex urban layouts
+
+**Impact**: "Convenience" features (e.g., `dist_to_subway`) are approximations that might over-optimistically assess a hotel's location.
+
+### Temporal Dynamics & Seasonality
+
+**Challenge**: Dataset represents a static snapshot in time.
+
+**Missing Factors**:
+- Seasonality effects (summer festivals, tourist seasons)
+- Temporary construction noise
+- Evolving neighborhoods
+- Review timestamps not accounted for
+
+**Impact**: Model doesn't capture transient trends affecting guest satisfaction. A "quiet" neighborhood might be noisy during peak seasons.
+
+### Key Learnings
+
+1. **Data Engineering Outweighs Modeling**: Initially underestimated computational cost of spatial joins. The "Cartesian Explosion" problem forced innovation with Geohashing and neighbor-cell strategies.
+
+2. **External Enrichment is Powerful but Noisy**: Aligning vague hotel addresses with precise OSM coordinates required robust cleaning logic.
+
+3. **Simple Signals Win**: Despite complex spatial and NLP features, `number_of_reviews` (social proof) remains the strongest predictor - highlighting the power of "wisdom of the crowd" in hospitality.
+
+4. **Trade-offs in Data Collection**: Real-world data science involves balancing ideal data coverage with practical constraints (rate limits, scraping difficulties, API costs).
 
 ---
 
@@ -535,6 +642,33 @@ For questions or issues with the notebooks, please check:
 3. Cluster configuration and resources
 
 **Expected Total Runtime**: 20-30 minutes for all notebooks
+
+---
+
+## Conclusion
+
+This project successfully developed **"Check-in To Reality"**, a comprehensive data-driven framework that quantifies the gap between hotel marketing promises and actual guest experiences.
+
+### Key Achievements
+
+1. **Large-Scale Data Integration**: Successfully integrated over **190,000 external data points** from OpenStreetMap, Google Maps, and Numbeo with Booking.com's hotel dataset.
+
+2. **Innovative Engineering Solutions**: Overcame significant computational challenges (Cartesian explosion problem) using Geohashing techniques with neighbor-cell expansion for efficient spatial joins.
+
+3. **Hybrid Analytics Approach**: Combined rule-based NLP with BERT-based sentiment analysis to extract nuanced insights from guest reviews.
+
+4. **Strong Predictive Performance**: Achieved **R² = 0.873** with Gradient Boosted Trees, validating that external environmental factors (noise levels, transit accessibility) significantly influence guest satisfaction.
+
+5. **Actionable Insights**: Revealed that while physical amenities and location are critical, the "wisdom of the crowd" (review volume and text) remains the strongest indicator of quality.
+
+### Impact
+
+This framework offers **dual benefits**:
+
+- **For Travelers**: Empowers informed decisions based on objective reality rather than just marketing claims
+- **For Hosts**: Provides actionable, granular feedback to bridge the gap between expectation and delivery
+
+The analysis demonstrates that data science can transform subjective hospitality experiences into quantifiable, predictable outcomes, ultimately improving trust and decision-making in the accommodation marketplace.
 
 ---
 
