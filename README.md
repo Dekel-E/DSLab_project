@@ -8,6 +8,7 @@ This project analyzes the gap between hotel expectations (what hotels claim/prom
 
 ---
 ## Notebook Execution Order and how to run 
+Here is a short video on how to run : https://drive.google.com/file/d/1WvjKvSmrzrPztH8mYc3_PYvDywPvBEh9/view?usp=sharing
 Download and copy the notebooks to data bricks and run them in this order exactly
 
 ```
