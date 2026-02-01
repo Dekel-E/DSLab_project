@@ -63,8 +63,10 @@ Download and copy the notebooks to Databricks, then run them **in this exact ord
 ## ⚙️ Important Setup Note
 
 > **⚠️ BEFORE RUNNING**: You must configure environment variables in the first cell of relevant notebooks:
+
 **Booking.ipynb** | In the first cell of the notebook paste "sas_token = booking_token"
- **scraped_data.ipynb** | In the first cell of the notebook paste: "sas_token = the token we where given to read data from the blob"
+
+**scraped_data.ipynb** | In the first cell of the notebook paste: "sas_token = the token we where given to read data from the blob"
 
 Or use just paste the text in the env file below that we sent via email:
 | Notebook | Variable | Purpose |
