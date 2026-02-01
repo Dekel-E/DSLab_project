@@ -66,7 +66,7 @@ Download and copy the notebooks to Databricks, then run them **in this exact ord
 
 | Notebook | Variable | Purpose |
 |----------|----------|---------|
-| **Booking.ipynb** | `env_booking` | Databricks environment path for Booking.com data |
+| **Booking.ipynb** | `env_booking` | Databricks environment path for Booking.com data | 
 | **scraped_data.ipynb** | `env_scraped_data` | Workspace path where CSV files are located |
 
 💡 These environment variables are critical for the notebooks to locate and access the required data files.
@@ -239,7 +239,7 @@ Loads and processes supplementary datasets (OSM POIs, Google Maps POIs, Crime da
 ### How to Run
 ```python
 # Prerequisites
-# - CSV files in Workspace: /Workspace/Users/[username]/
+# - CSV files being read from the blob:
 #   - amsterdam.csv, bangkok.csv, dubai.csv, etc. (OSM)
 #   - amsterdam_final.csv, bangkok_final.csv, etc. (Google Maps)
 #   - crime_amsterdam_numbeo.csv, etc. (Crime)
